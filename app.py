@@ -41,7 +41,7 @@ def calculate_indicators(df):
     df['SMA_50'] = sma_50
     return df
 
-# Scoring logic for AUD strength
+# AUD strength score based on indicators
 def calculate_aud_strength_score(row, prev):
     score = 0
     try:
@@ -57,29 +57,34 @@ def calculate_aud_strength_score(row, prev):
             return 0
 
         if indicators[0] > 70:
-            score += 40  # RSI overbought
+            score += 40
         if indicators[1] > indicators[2] and indicators[3] < indicators[2]:
-            score += 30  # MACD bearish crossover
+            score += 30
         if indicators[5] > indicators[4]:
-            score += 30  # Price above SMA
+            score += 30
+
         return score
     except Exception as e:
         st.warning(f"Scoring error: {e}")
         return 0
 
-# Load and calculate
+# Load data
 data = get_fx_data()
 data = calculate_indicators(data)
+
+daily_data = get_daily_data()
 latest = data.iloc[-1]
 prev = data.iloc[-2]
+latest_daily = daily_data.iloc[-1]
+
+try:
+    above_200_sma = float(latest_daily['price']) > float(latest_daily['SMA_200'])
+except:
+    above_200_sma = False
+
 score = calculate_aud_strength_score(latest, prev)
 
-# Load higher timeframe data
-daily_data = get_daily_data()
-latest_daily = daily_data.iloc[-1]
-above_200_sma = latest_daily['price'] > latest_daily['SMA_200'] if not pd.isna(latest_daily['SMA_200']) else False
-
-# Streamlit UI
+# UI
 st.title("🇦🇺 AUD/USD FX Buy USD Advisor")
 
 st.subheader("Latest FX Rate")
@@ -89,8 +94,8 @@ st.subheader("Technical Indicators")
 st.write(f"RSI: {float(latest['RSI']):.2f}")
 st.write(f"MACD: {float(latest['MACD']):.4f}")
 st.write(f"MACD Signal: {float(latest['MACD_Signal']):.4f}")
-st.write(f"50-period SMA (intraday): {float(latest['SMA_50']):.4f}")
-st.write(f"200-day SMA (daily): {float(latest_daily['SMA_200']) if not pd.isna(latest_daily['SMA_200']) else 'N/A'}")
+st.write(f"50-period SMA (30m): {float(latest['SMA_50']):.4f}")
+st.write(f"200-day SMA (1d): {float(latest_daily['SMA_200']) if not pd.isna(latest_daily['SMA_200']) else 'N/A'}")
 
 # Sentiment meter
 st.subheader("AUD Sentiment Meter")
@@ -98,9 +103,10 @@ with st.expander("How sentiment is scored"):
     st.markdown("""
     - **RSI > 70** → AUD is overbought (bullish AUD)
     - **MACD crossover** → Bearish signal forming
-    - **Price above intraday SMA** → AUD trending up
-    - **Price above 200-day SMA** → AUD long-term bullish
+    - **Price > 50-SMA** → AUD trending up
+    - **Price > 200-SMA** → AUD long-term bullish
     """)
+
 sentiment_signals = [
     float(latest['RSI']) > 70,
     float(prev['MACD']) > float(prev['MACD_Signal']) and float(latest['MACD']) < float(latest['MACD_Signal']),
@@ -110,7 +116,7 @@ sentiment_signals = [
 sentiment_strength = int((sum(sentiment_signals) / 4) * 100)
 st.progress(sentiment_strength, text=f"AUD bullish sentiment: {sentiment_strength}%")
 
-# Score and call
+# Buy signal summary
 st.subheader("AUD Strength Score (for Buying USD)")
 st.markdown("""
 <details>
@@ -140,17 +146,6 @@ try:
 except:
     st.markdown("⚠️ Unable to calculate price change trend.")
 
-# Price Chart
+# Chart
 st.subheader("AUD/USD Price Chart")
-fig, ax = plt.subplots(figsize=(10, 5))
-ax.plot(data.index, data['price'], label='AUD/USD')
-ax.plot(data.index, data['SMA_50'], label='50-period SMA (30m)', linestyle='--')
-ax.set_ylabel("Exchange Rate")
-ax.set_title("AUD/USD with SMA")
-ax.legend()
-st.pyplot(fig)
-
-# Last update footer
-st.caption(f"Live FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}. This dashboard helps Australians identify favourable USD buying moments.")
-
-
+fig, ax = plt.subplots(figsize=(1
