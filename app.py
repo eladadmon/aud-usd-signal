@@ -95,6 +95,7 @@ st.write(f"MACD Signal: {float(latest['MACD_Signal']):.4f}")
 st.write(f"50-period SMA (30m): {float(latest['SMA_50']):.4f}")
 st.write(f"200-day SMA (1d): {sma200_display}")
 
+# Sentiment Meter
 st.subheader("AUD Sentiment Meter")
 with st.expander("How sentiment is scored"):
     st.markdown("""
@@ -204,7 +205,26 @@ st.pyplot(fig)
 st.subheader("📰 Relevant News Headlines")
 news_feed = feedparser.parse("https://www.rba.gov.au/rss/rss.xml")
 for entry in news_feed.entries[:5]:
-    st.markdown(f"**[{entry.title}]({entry.link})**\n- {entry.published}")
+    st.markdown(f"**[{entry.title}]({entry.link})**  \n- {entry.published}")
+
+# Visual FX Summary
+st.subheader("🎯 FX Summary")
+try:
+    hist = data["MACD"] - data["MACD_Signal"]
+    macd_dir = np.sign(hist.diff().iloc[-1])
+    rsi_dir = np.sign(data['RSI'].diff().iloc[-1])
+    st.markdown(f"""
+    ---
+    - **Exchange Rate**: `{float(latest['price']):.4f}`
+    - **Strength Score**: `{score}%` ({'Strong' if score >= 80 else 'Moderate' if score >= 50 else 'Weak'})
+    - **Sentiment**: `{sentiment_strength}% bullish`
+    - **MACD Trend**: `{'⬆️ Rising' if macd_dir > 0 else '⬇️ Falling' if macd_dir < 0 else '➡️ Flat'}`
+    - **RSI Trend**: `{'⬆️ Rising' if rsi_dir > 0 else '⬇️ Falling' if rsi_dir < 0 else '➡️ Flat'}`
+    - **Action Zone**: `{'💰 Buy Now' if score >= 80 else '⏳ Wait / Partial' if score >= 50 else '🛑 Hold'}`
+    ---
+    """)
+except:
+    st.markdown("⚠️ Unable to summarize directional trend.")
 
 # Footer
 st.caption(f"Live intraday FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}.")
