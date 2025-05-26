@@ -132,6 +132,17 @@ for item in breakdown:
     label = item.replace("✅ ", "").replace("❌ ", "")
     st.markdown(f"- {icon} **{label}**")
 
+# Pre-buy warning logic
+st.subheader("📡 Pre-Buy Alert Zone")
+try:
+    macd_diff = float(latest['MACD']) - float(latest['MACD_Signal'])
+    if float(latest['RSI']) > 70 and macd_diff > 0 and macd_diff < 0.001:
+        st.warning("⚠️ AUD is strong but momentum is fading. Consider buying USD now before MACD crossover.")
+    elif float(latest['RSI']) > 68 and macd_diff > -0.0005 and macd_diff < 0.0005:
+        st.info("🕒 RSI is elevated and MACD is flattening — last chance zone to buy USD.")
+except:
+    st.caption("Could not calculate MACD divergence for pre-trigger zone.")
+
 # Trend summary
 try:
     change = float((data['price'].iloc[-1] - data['price'].iloc[0]) / data['price'].iloc[0] * 100)
