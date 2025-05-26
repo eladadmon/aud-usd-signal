@@ -66,7 +66,7 @@ score = calculate_score(latest, prev)
 st.title("🇦🇺 AUD/USD FX Buy Signal Dashboard")
 
 st.subheader("Latest FX Rate")
-st.metric("AUD/USD", f"{latest['price']:.4f}")
+st.metric("AUD/USD", f"{float(latest['price']):.4f}")
 
 st.subheader("Technical Indicators")
 st.write(f"RSI: {latest['RSI']:.2f}")
