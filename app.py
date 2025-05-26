@@ -34,19 +34,25 @@ def calculate_indicators(df):
     df['SMA_50'] = sma_50
     return df
 
-# Score logic with NaN protection
+# Score logic with robust error handling
 def calculate_score(row, prev):
     score = 0
-    if pd.isna(row['RSI']) or pd.isna(prev['MACD']) or pd.isna(prev['MACD_Signal']) or pd.isna(row['MACD']) or pd.isna(row['SMA_50']):
-        return score  # skip scoring if indicators are missing
+    try:
+        indicators = [row['RSI'], prev['MACD'], prev['MACD_Signal'], row['MACD'], row['SMA_50'], row['price']]
+        if any(pd.isna(x) or not np.isfinite(x) for x in indicators):
+            return 0
 
-    if row['RSI'] > 70:
-        score += 40
-    if prev['MACD'] > prev['MACD_Signal'] and row['MACD'] < row['MACD_Signal']:
-        score += 30
-    if row['price'] < row['SMA_50']:
-        score += 30
-    return score
+        if row['RSI'] > 70:
+            score += 40
+        if prev['MACD'] > prev['MACD_Signal'] and row['MACD'] < row['MACD_Signal']:
+            score += 30
+        if row['price'] < row['SMA_50']:
+            score += 30
+        return score
+
+    except Exception as e:
+        st.warning(f"Scoring error: {e}")
+        return 0
 
 # Load data
 data = get_fx_data()
@@ -56,7 +62,7 @@ latest = data.iloc[-1]
 prev = data.iloc[-2]
 score = calculate_score(latest, prev)
 
-# UI
+# Streamlit UI
 st.title("🇦🇺 AUD/USD FX Buy Signal Dashboard")
 
 st.subheader("Latest FX Rate")
@@ -76,7 +82,7 @@ elif score >= 60:
 else:
     st.info(f"🧊 No buy signal (Score: {score}%)")
 
-# Chart
+# Price Chart
 st.subheader("AUD/USD Price Chart")
 fig, ax = plt.subplots(figsize=(10, 5))
 ax.plot(data.index, data['price'], label='AUD/USD')
@@ -86,5 +92,5 @@ ax.set_title("AUD/USD with SMA")
 ax.legend()
 st.pyplot(fig)
 
-st.caption("Live FX data from Yahoo Finance. Score based on overbought conditions, MACD crossovers, and trend structure.")
+st.caption("Live FX data from Yahoo Finance. Signal based on RSI overbought levels, MACD crossovers, and trend structure.")
 
