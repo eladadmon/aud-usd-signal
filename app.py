@@ -4,9 +4,6 @@ import numpy as np
 import yfinance as yf
 import matplotlib.pyplot as plt
 import feedparser
-from datetime import datetime
-import os
-import csv
 
 # Fetch intraday AUD/USD data
 def get_fx_data():
@@ -22,7 +19,7 @@ def get_daily_data():
     df["SMA_200"] = df['price'].rolling(window=200).mean()
     return df
 
-# Calculate indicators
+# Calculate technical indicators
 def calculate_indicators(df):
     price = df['price']
     delta = price.diff()
@@ -81,19 +78,10 @@ except:
     sma200_display = "N/A"
     above_200_sma = False
 
-# Scoring
+# Calculate score
 score, breakdown = calculate_aud_strength_score(latest, prev)
 
-# Sentiment
-sentiment_signals = [
-    float(latest['RSI']) > 70,
-    float(prev['MACD']) > float(prev['MACD_Signal']) and float(latest['MACD']) < float(latest['MACD_Signal']),
-    float(latest['price']) > float(latest['SMA_50']),
-    above_200_sma
-]
-sentiment_strength = int((sum(sentiment_signals) / 4) * 100)
-
-# Display
+# Start UI
 st.title("🇦🇺 AUD/USD FX Buy USD Advisor")
 
 st.subheader("Latest FX Rate")
@@ -106,9 +94,19 @@ st.write(f"MACD Signal: {float(latest['MACD_Signal']):.4f}")
 st.write(f"50-period SMA (30m): {float(latest['SMA_50']):.4f}")
 st.write(f"200-day SMA (1d): {sma200_display}")
 
+# Sentiment score
+sentiment_signals = [
+    float(latest['RSI']) > 70,
+    float(prev['MACD']) > float(prev['MACD_Signal']) and float(latest['MACD']) < float(latest['MACD_Signal']),
+    float(latest['price']) > float(latest['SMA_50']),
+    above_200_sma
+]
+sentiment_strength = int((sum(sentiment_signals) / 4) * 100)
+
 st.subheader("AUD Sentiment Meter")
 st.progress(sentiment_strength, text=f"AUD bullish sentiment: {sentiment_strength}%")
 
+# Strength score
 st.subheader("📊 AUD Strength Score (for Buying USD)")
 col1, col2 = st.columns([1, 4])
 col1.markdown("**Score**")
@@ -125,7 +123,7 @@ st.markdown("**🔍 Indicator Breakdown:**")
 for item in breakdown:
     st.markdown(f"- {item}")
 
-# Pre-Buy Alert Zone
+# Pre-Buy Alert
 st.subheader("📡 Pre-Buy Alert Zone")
 try:
     macd_diff = float(latest['MACD']) - float(latest['MACD_Signal'])
@@ -159,14 +157,41 @@ try:
 except:
     st.warning("⚠️ Unable to calculate trend forecast.")
 
-# Trend summary
+# Weakening Probability Score
+st.subheader("🔮 AUD Weakening Probability")
+try:
+    macd_hist = data['MACD'] - data['MACD_Signal']
+    macd_slope = np.polyfit(range(5), macd_hist.tail(5), 1)[0]
+    price_slope = np.polyfit(range(5), data['price'].tail(5), 1)[0]
+    sma_slope = np.polyfit(range(5), data['SMA_50'].tail(5), 1)[0]
+    rsi_trend = np.polyfit(range(5), data['RSI'].tail(5), 1)[0]
+
+    weakening_score = 0
+    if macd_hist.iloc[-1] < 0 and macd_slope < 0:
+        weakening_score += 40
+    if price_slope < sma_slope:
+        weakening_score += 30
+    if float(latest['RSI']) < 40 and rsi_trend < 0:
+        weakening_score += 30
+
+    st.markdown(f"**AUD Weakening Probability Score: {weakening_score}%**")
+    if weakening_score >= 80:
+        st.success("💰 AUD is weakening fast. Best to buy USD now.")
+    elif weakening_score >= 50:
+        st.warning("🕒 Momentum is weakening. Consider partial buy.")
+    else:
+        st.info("⏳ Trend is unclear. Monitor before acting.")
+except:
+    st.caption("Could not calculate weakening probability.")
+
+# Price trend summary
 try:
     change = float((data['price'].iloc[-1] - data['price'].iloc[0]) / data['price'].iloc[0] * 100)
     st.markdown(f"📊 **AUD has {'strengthened' if change > 0 else 'weakened'} by {abs(change):.2f}%** over the last 5 days.")
 except:
     st.markdown("⚠️ Unable to calculate price trend.")
 
-# Simple Action Summary
+# What Should I Do Right Now?
 st.subheader("🎯 What Should I Do Right Now?")
 try:
     hist = data["MACD"] - data["MACD_Signal"]
@@ -206,42 +231,12 @@ news_feed = feedparser.parse("https://www.rba.gov.au/rss/rss.xml")
 for entry in news_feed.entries[:5]:
     st.markdown(f"**[{entry.title}]({entry.link})**  \n- {entry.published}")
 
-# 🕒 Signal Log History
-log_file = "signal_log.csv"
-if not os.path.exists(log_file):
-    with open(log_file, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Timestamp", "Score", "Sentiment %", "Price", "Action"])
-
-current_action = (
-    "Buy" if score >= 80 else
-    "Partial" if score >= 50 else
-    "Hold"
-)
-
-with open(log_file, "a", newline="") as f:
-    writer = csv.writer(f)
-    writer.writerow([
-        datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
-        score,
-        sentiment_strength,
-        f"{float(latest['price']):.4f}",
-        current_action
-    ])
-
-st.subheader("🕒 Signal Log History")
-try:
-    df_log = pd.read_csv(log_file)
-    st.dataframe(df_log.tail(5), use_container_width=True)
-except:
-    st.warning("No history available yet.")
-
-# 💵 USD Cost Comparison
+# USD Cost Comparison
 st.subheader("💵 USD Cost Comparison")
 try:
     earlier_price = float(data['price'].iloc[0])
     current_price = float(latest['price'])
-    aud_saved = (1 / earlier_price - 1 / current_price) * 50000  # For 50k USD
+    aud_saved = (1 / earlier_price - 1 / current_price) * 50000  # For $50k USD
     st.markdown(f"If you buy **$50,000 USD now**, it will cost **${(50000 / current_price):,.0f} AUD**.")
     st.markdown(f"Compared to 5 days ago, you're saving **${aud_saved:,.0f} AUD**.")
 except:
@@ -249,4 +244,5 @@ except:
 
 # Footer
 st.caption(f"Live intraday FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}.")
+
 
