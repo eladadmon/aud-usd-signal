@@ -107,5 +107,61 @@ st.write(f"200-day SMA (1d): {sma200_display}")
 st.subheader("AUD Sentiment Meter")
 with st.expander("How sentiment is scored"):
     st.markdown("""
-    - **RSI > 70** → AUD is
+    - **RSI > 70** → AUD is overbought (bullish AUD)
+    - **MACD crossover** → Bearish signal forming
+    - **Price > 50-SMA** → AUD trending up
+    - **Price > 200-SMA** → AUD long-term bullish
+    """)
+
+sentiment_signals = [
+    float(latest['RSI']) > 70,
+    float(prev['MACD']) > float(prev['MACD_Signal']) and float(latest['MACD']) < float(latest['MACD_Signal']),
+    float(latest['price']) > float(latest['SMA_50']),
+    above_200_sma
+]
+sentiment_strength = int((sum(sentiment_signals) / 4) * 100)
+st.progress(sentiment_strength, text=f"AUD bullish sentiment: {sentiment_strength}%")
+
+# Buy signal score
+st.subheader("AUD Strength Score (for Buying USD)")
+st.markdown("""
+<details>
+<summary>What do these mean?</summary>
+<ul>
+<li>🟢 <b>Strong</b>: AUD is likely peaking. Good time to convert to USD.</li>
+<li>🟠 <b>Neutral</b>: AUD is firm, but not all signals align. Monitor closely.</li>
+<li>🔴 <b>Weak</b>: AUD likely to weaken further. Hold off if possible.</li>
+</ul>
+</details>
+""", unsafe_allow_html=True)
+
+if score >= 80:
+    st.success(f"🟢 AUD is strong — Consider buying USD now (Score: {score}%)")
+elif score >= 60:
+    st.warning(f"🟠 AUD is neutral — Monitor closely (Score: {score}%)")
+else:
+    st.info(f"🔴 AUD is weak — Hold off if possible (Score: {score}%)")
+
+# Trend summary
+try:
+    change = float((data['price'].iloc[-1] - data['price'].iloc[0]) / data['price'].iloc[0] * 100)
+    if change > 0:
+        st.markdown(f"📈 AUD has strengthened by **{change:.2f}%** over the last 5 days.")
+    else:
+        st.markdown(f"📉 AUD has weakened by **{abs(change):.2f}%** over the last 5 days.")
+except:
+    st.markdown("⚠️ Unable to calculate price change trend.")
+
+# Chart
+st.subheader("AUD/USD Price Chart")
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.plot(data.index, data['price'], label='AUD/USD')
+ax.plot(data.index, data['SMA_50'], label='50-period SMA (30m)', linestyle='--')
+ax.set_ylabel("Exchange Rate")
+ax.set_title("AUD/USD with SMA")
+ax.legend()
+st.pyplot(fig)
+
+# Footer
+st.caption(f"Live intraday FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}.")
 
