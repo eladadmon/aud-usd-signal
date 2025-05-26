@@ -42,7 +42,7 @@ def calculate_indicators(df):
     df['SMA_50'] = sma_50
     return df
 
-# Scoring logic
+# Score logic
 def calculate_aud_strength_score(row, prev):
     score = 0
     breakdown = []
@@ -63,7 +63,7 @@ def calculate_aud_strength_score(row, prev):
         st.warning(f"Scoring error: {e}")
         return 0, [f"⚠️ Scoring error: {e}"]
 
-# Load and calculate
+# Load data
 data = get_fx_data()
 data = calculate_indicators(data)
 daily_data = get_daily_data()
@@ -82,7 +82,7 @@ except:
 
 score, breakdown = calculate_aud_strength_score(latest, prev)
 
-# Display
+# UI
 st.title("🇦🇺 AUD/USD FX Buy USD Advisor")
 
 st.subheader("Latest FX Rate")
@@ -95,7 +95,7 @@ st.write(f"MACD Signal: {float(latest['MACD_Signal']):.4f}")
 st.write(f"50-period SMA (30m): {float(latest['SMA_50']):.4f}")
 st.write(f"200-day SMA (1d): {sma200_display}")
 
-# Sentiment Meter
+# Sentiment meter
 st.subheader("AUD Sentiment Meter")
 with st.expander("How sentiment is scored"):
     st.markdown("""
@@ -114,7 +114,7 @@ sentiment_signals = [
 sentiment_strength = int((sum(sentiment_signals) / 4) * 100)
 st.progress(sentiment_strength, text=f"AUD bullish sentiment: {sentiment_strength}%")
 
-# Score and label
+# Score summary
 st.subheader("📊 AUD Strength Score (for Buying USD)")
 col1, col2 = st.columns([1, 4])
 col1.markdown("**Score**")
@@ -133,7 +133,7 @@ for item in breakdown:
     label = item.replace("✅ ", "").replace("❌ ", "")
     st.markdown(f"- {icon} **{label}**")
 
-# Pre-buy warning logic
+# Pre-buy alert
 st.subheader("📡 Pre-Buy Alert Zone")
 try:
     macd_diff = float(latest['MACD']) - float(latest['MACD_Signal'])
@@ -142,7 +142,7 @@ try:
     elif float(latest['RSI']) > 68 and macd_diff > -0.0005 and macd_diff < 0.0005:
         st.info("🕒 RSI is elevated and MACD is flattening — last chance zone to buy USD.")
 except:
-    st.caption("Could not calculate MACD divergence for pre-trigger zone.")
+    st.caption("Could not calculate MACD divergence.")
 
 # Trend forecast
 st.subheader("🔮 Trend Forecast")
@@ -164,67 +164,4 @@ try:
     if macd_slope < 0:
         trend_signals.append("📉 MACD histogram falling — bearish momentum building")
     elif macd_slope > 0:
-        trend_signals.append("📈 MACD histogram rising — bullish pressure increasing")
-
-    for t in trend_signals:
-        st.markdown(f"- {t}")
-except:
-    st.warning("⚠️ Unable to calculate trend forecast.")
-
-# Trend summary
-try:
-    change = float((data['price'].iloc[-1] - data['price'].iloc[0]) / data['price'].iloc[0] * 100)
-    if change > 0:
-        st.markdown(f"📈 **AUD has strengthened** by **{change:.2f}%** over the last 5 days.")
-    else:
-        st.markdown(f"📉 **AUD has weakened** by **{abs(change):.2f}%** over the last 5 days.")
-except:
-    st.markdown("⚠️ Unable to calculate price trend.")
-
-# Action box
-if score < 50 and float(latest['RSI']) < 50 and float(latest['MACD']) < float(latest['MACD_Signal']):
-    st.error("🚫 Action: Do not buy USD now. AUD momentum is weak.")
-elif score >= 80:
-    st.success("💰 Action: Excellent zone to buy USD — take advantage of AUD strength!")
-elif score >= 50:
-    st.warning("🕵️‍♂️ Action: Partial buy zone — watch for MACD flip.")
-else:
-    st.info("🛑 Action: Wait. AUD is not strong enough yet.")
-
-# Chart
-st.subheader("AUD/USD Price Chart")
-fig, ax = plt.subplots(figsize=(10, 5))
-ax.plot(data.index, data['price'], label='AUD/USD')
-ax.plot(data.index, data['SMA_50'], label='50-period SMA (30m)', linestyle='--')
-ax.set_ylabel("Exchange Rate")
-ax.set_title("AUD/USD with SMA")
-ax.legend()
-st.pyplot(fig)
-
-# News headlines
-st.subheader("📰 Relevant News Headlines")
-news_feed = feedparser.parse("https://www.rba.gov.au/rss/rss.xml")
-for entry in news_feed.entries[:5]:
-    st.markdown(f"**[{entry.title}]({entry.link})**  \n- {entry.published}")
-
-# Visual FX Summary
-st.subheader("🎯 FX Summary")
-try:
-    hist = data["MACD"] - data["MACD_Signal"]
-    macd_dir = np.sign(hist.diff().iloc[-1])
-    rsi_dir = np.sign(data['RSI'].diff().iloc[-1])
-    st.markdown(f"""
-    ---
-    - **Exchange Rate**: `{float(latest['price']):.4f}`
-    - **Strength Score**: `{score}%` ({'Strong' if score >= 80 else 'Moderate' if score >= 50 else 'Weak'})
-    - **Sentiment**: `{sentiment_strength}% bullish`
-    - **MACD Trend**: `{'⬆️ Rising' if macd_dir > 0 else '⬇️ Falling' if macd_dir < 0 else '➡️ Flat'}`
-    - **RSI Trend**: `{'⬆️ Rising' if rsi_dir > 0 else '⬇️ Falling' if rsi_dir < 0 else '➡️ Flat'}`
-    - **Action Zone**: `{'💰 Buy Now' if score >= 80 else '⏳ Wait / Partial' if score >= 50 else '🛑 Hold'}`
-    ---
-    """)
-except:
-    st.markdown("⚠️ Unable to summarize directional trend.")
-
-# Footer
-st.caption(f"Live intraday FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}.")
+        trend_signals.append("📈 MACD histogram risi_
