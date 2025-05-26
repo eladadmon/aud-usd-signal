@@ -77,18 +77,16 @@ latest = data.iloc[-1]
 prev = data.iloc[-2]
 latest_daily = daily_data.iloc[-1]
 
+# Safe 200-day SMA check
 try:
-    above_200_sma = float(latest_daily['price']) > float(latest_daily['SMA_200'])
+    sma200_value = float(latest_daily['SMA_200'])
+    sma200_display = f"{sma200_value:.4f}" if np.isfinite(sma200_value) else "N/A"
+    above_200_sma = float(latest_daily['price']) > sma200_value
 except:
+    sma200_display = "N/A"
     above_200_sma = False
 
 score = calculate_aud_strength_score(latest, prev)
-
-# Format 200-day SMA safely
-if not pd.isna(latest_daily['SMA_200']):
-    sma200_display = f"{float(latest_daily['SMA_200']):.4f}"
-else:
-    sma200_display = "N/A"
 
 # UI
 st.title("🇦🇺 AUD/USD FX Buy USD Advisor")
@@ -164,4 +162,3 @@ st.pyplot(fig)
 
 # Footer
 st.caption(f"Live intraday FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}.")
-
