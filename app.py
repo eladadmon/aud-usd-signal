@@ -34,9 +34,12 @@ def calculate_indicators(df):
     df['SMA_50'] = sma_50
     return df
 
-# Score logic
+# Score logic with NaN protection
 def calculate_score(row, prev):
     score = 0
+    if pd.isna(row['RSI']) or pd.isna(prev['MACD']) or pd.isna(prev['MACD_Signal']) or pd.isna(row['MACD']) or pd.isna(row['SMA_50']):
+        return score  # skip scoring if indicators are missing
+
     if row['RSI'] > 70:
         score += 40
     if prev['MACD'] > prev['MACD_Signal'] and row['MACD'] < row['MACD_Signal']:
@@ -84,3 +87,4 @@ ax.legend()
 st.pyplot(fig)
 
 st.caption("Live FX data from Yahoo Finance. Score based on overbought conditions, MACD crossovers, and trend structure.")
+
