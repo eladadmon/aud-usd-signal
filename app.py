@@ -60,3 +60,4 @@ You're in a **cautious zone**:
 
 📌 **Action idea**: Consider partial USD conversion now and watch for MACD alignment.
 """)
+
