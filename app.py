@@ -34,7 +34,7 @@ def calculate_indicators(df):
     df['SMA_50'] = sma_50
     return df
 
-# Score logic with robust error handling
+# Score logic with error handling
 def calculate_score(row, prev):
     score = 0
     try:
@@ -42,11 +42,11 @@ def calculate_score(row, prev):
         if any(pd.isna(x) or not np.isfinite(x) for x in indicators):
             return 0
 
-        if row['RSI'] > 70:
+        if float(row['RSI']) > 70:
             score += 40
-        if prev['MACD'] > prev['MACD_Signal'] and row['MACD'] < row['MACD_Signal']:
+        if float(prev['MACD']) > float(prev['MACD_Signal']) and float(row['MACD']) < float(row['MACD_Signal']):
             score += 30
-        if row['price'] < row['SMA_50']:
+        if float(row['price']) < float(row['SMA_50']):
             score += 30
         return score
 
@@ -54,7 +54,7 @@ def calculate_score(row, prev):
         st.warning(f"Scoring error: {e}")
         return 0
 
-# Load data
+# Load and calculate
 data = get_fx_data()
 data = calculate_indicators(data)
 
@@ -62,17 +62,17 @@ latest = data.iloc[-1]
 prev = data.iloc[-2]
 score = calculate_score(latest, prev)
 
-# Streamlit UI
+# UI
 st.title("🇦🇺 AUD/USD FX Buy Signal Dashboard")
 
 st.subheader("Latest FX Rate")
 st.metric("AUD/USD", f"{float(latest['price']):.4f}")
 
 st.subheader("Technical Indicators")
-st.write(f"RSI: {latest['RSI']:.2f}")
-st.write(f"MACD: {latest['MACD']:.4f}")
-st.write(f"MACD Signal: {latest['MACD_Signal']:.4f}")
-st.write(f"50-day SMA: {latest['SMA_50']:.4f}")
+st.write(f"RSI: {float(latest['RSI']):.2f}")
+st.write(f"MACD: {float(latest['MACD']):.4f}")
+st.write(f"MACD Signal: {float(latest['MACD_Signal']):.4f}")
+st.write(f"50-day SMA: {float(latest['SMA_50']):.4f}")
 
 st.subheader("Buy USD Signal Confidence")
 if score >= 80:
@@ -82,7 +82,7 @@ elif score >= 60:
 else:
     st.info(f"🧊 No buy signal (Score: {score}%)")
 
-# Price Chart
+# Chart
 st.subheader("AUD/USD Price Chart")
 fig, ax = plt.subplots(figsize=(10, 5))
 ax.plot(data.index, data['price'], label='AUD/USD')
@@ -93,4 +93,5 @@ ax.legend()
 st.pyplot(fig)
 
 st.caption("Live FX data from Yahoo Finance. Signal based on RSI overbought levels, MACD crossovers, and trend structure.")
+
 
