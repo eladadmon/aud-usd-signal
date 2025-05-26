@@ -52,7 +52,7 @@ st.markdown("""
 st.markdown("💜 **AUD Weakening Probability**")
 st.write("AUD Weakening Probability Score: 0%")
 st.warning("🌀 Trend is unclear. Monitor before acting.")
-st.success("📈 AUD has strengthened by 0.48% over the last 5 days.")
+st.success("📈 AUD has strengthened by 0.48% in the last 24 hours.")
 
 # What Should I Do?
 st.markdown("🎯 **What Should I Do Right Now?**")
@@ -94,5 +94,4 @@ Compared to 5 days ago, you're saving **$367 AUD**.
 """)
 
 st.caption("Live intraday FX data from Yahoo Finance. Last updated: 2025-05-26 22:30 UTC.")
-
 
