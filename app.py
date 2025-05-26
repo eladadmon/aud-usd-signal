@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 # Fetch AUD/USD FX data using Yahoo Finance
 def get_fx_data():
-    df = yf.download("AUDUSD=X", period="90d", interval="1d")
+    df = yf.download("AUDUSD=X", period="5d", interval="30m")
     df = df[['Close']].rename(columns={"Close": "price"})
     df["price"] = df["price"].astype(float)
     return df
