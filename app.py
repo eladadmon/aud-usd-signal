@@ -170,3 +170,21 @@ for entry in news_feed.entries[:5]:
 # Footer
 st.caption(f"Live intraday FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}.")
 
+
+
+# Model interpretation summary
+st.subheader("📊 Model Interpretation Summary")
+st.markdown("""
+- ✅ **RSI > 70** → AUD is potentially peaking  
+- ❌ **MACD crossover not confirmed** → wait for bearish flip  
+- ✅ **Price > 50-SMA** → short-term AUD uptrend  
+- 🔴 **200-day SMA** not available → long-term trend unclear  
+
+### 🧠 Bottom Line:
+You're in a **mixed signal zone**:
+- RSI suggests opportunity to buy USD
+- MACD says hold
+
+📌 **Action**: Consider partial USD conversion now. Watch for MACD confirmation.
+""")
+
