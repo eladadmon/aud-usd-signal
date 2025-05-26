@@ -4,7 +4,7 @@ import numpy as np
 import yfinance as yf
 import matplotlib.pyplot as plt
 
-# Fetch AUD/USD FX data using Yahoo Finance
+# Fetch intraday AUD/USD data using Yahoo Finance
 def get_fx_data():
     df = yf.download("AUDUSD=X", period="5d", interval="30m")
     df = df[['Close']].rename(columns={"Close": "price"})
@@ -34,22 +34,29 @@ def calculate_indicators(df):
     df['SMA_50'] = sma_50
     return df
 
-# Score logic with error handling
+# Score logic with robust error handling
 def calculate_score(row, prev):
     score = 0
     try:
-        indicators = [row['RSI'], prev['MACD'], prev['MACD_Signal'], row['MACD'], row['SMA_50'], row['price']]
-        if any(pd.isna(x) or not np.isfinite(x) for x in indicators):
+        indicators = [
+            float(row['RSI']),
+            float(prev['MACD']),
+            float(prev['MACD_Signal']),
+            float(row['MACD']),
+            float(row['SMA_50']),
+            float(row['price'])
+        ]
+        if any(np.isnan(ind) or not np.isfinite(ind) for ind in indicators):
             return 0
 
-        if float(row['RSI']) > 70:
+        if indicators[0] > 70:
             score += 40
-        if float(prev['MACD']) > float(prev['MACD_Signal']) and float(row['MACD']) < float(row['MACD_Signal']):
+        if indicators[1] > indicators[2] and indicators[3] < indicators[2]:
             score += 30
-        if float(row['price']) < float(row['SMA_50']):
+        if indicators[5] < indicators[4]:
             score += 30
-        return score
 
+        return score
     except Exception as e:
         st.warning(f"Scoring error: {e}")
         return 0
@@ -62,7 +69,7 @@ latest = data.iloc[-1]
 prev = data.iloc[-2]
 score = calculate_score(latest, prev)
 
-# UI
+# Streamlit UI
 st.title("🇦🇺 AUD/USD FX Buy Signal Dashboard")
 
 st.subheader("Latest FX Rate")
@@ -72,7 +79,7 @@ st.subheader("Technical Indicators")
 st.write(f"RSI: {float(latest['RSI']):.2f}")
 st.write(f"MACD: {float(latest['MACD']):.4f}")
 st.write(f"MACD Signal: {float(latest['MACD_Signal']):.4f}")
-st.write(f"50-day SMA: {float(latest['SMA_50']):.4f}")
+st.write(f"50-period SMA: {float(latest['SMA_50']):.4f}")
 
 st.subheader("Buy USD Signal Confidence")
 if score >= 80:
@@ -86,22 +93,12 @@ else:
 st.subheader("AUD/USD Price Chart")
 fig, ax = plt.subplots(figsize=(10, 5))
 ax.plot(data.index, data['price'], label='AUD/USD')
-ax.plot(data.index, data['SMA_50'], label='50-day SMA', linestyle='--')
+ax.plot(data.index, data['SMA_50'], label='50-period SMA', linestyle='--')
 ax.set_ylabel("Exchange Rate")
 ax.set_title("AUD/USD with SMA")
 ax.legend()
 st.pyplot(fig)
 
-st.caption("Live FX data from Yahoo Finance. Signal based on RSI overbought levels, MACD crossovers, and trend structure.")
+# Last updated time
+st.caption(f"Live FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}")
 
-import time
-st.markdown(f"""
-    <script>
-        function refreshPage() {{
-            setTimeout(function() {{
-                window.location.reload();
-            }}, {15 * 60 * 1000});
-        }}
-        window.onload = refreshPage;
-    </script>
-""", unsafe_allow_html=True)
