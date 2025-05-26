@@ -124,3 +124,4 @@ st.pyplot(fig)
 # Last update footer
 st.caption(f"Live intraday FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}. This dashboard helps Australians identify favourable USD buying moments.")
 
+
