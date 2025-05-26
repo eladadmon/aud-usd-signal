@@ -96,3 +96,20 @@ try:
     if change > 0:
         st.markdown(f"📈 AUD has strengthened by **{change:.2f}%** over the last 5 days.")
     else:
+        st.markdown(f"📉 AUD has weakened by **{abs(change):.2f}%** over the last 5 days.")
+except:
+    st.markdown("⚠️ Unable to calculate price change trend.")
+
+# Price Chart
+st.subheader("AUD/USD Price Chart")
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.plot(data.index, data['price'], label='AUD/USD')
+ax.plot(data.index, data['SMA_50'], label='50-period SMA', linestyle='--')
+ax.set_ylabel("Exchange Rate")
+ax.set_title("AUD/USD with SMA")
+ax.legend()
+st.pyplot(fig)
+
+# Last update footer
+st.caption(f"Live intraday FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}.")
+
