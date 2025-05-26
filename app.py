@@ -94,4 +94,14 @@ st.pyplot(fig)
 
 st.caption("Live FX data from Yahoo Finance. Signal based on RSI overbought levels, MACD crossovers, and trend structure.")
 
-
+import time
+st.markdown(f"""
+    <script>
+        function refreshPage() {{
+            setTimeout(function() {{
+                window.location.reload();
+            }}, {15 * 60 * 1000});
+        }}
+        window.onload = refreshPage;
+    </script>
+""", unsafe_allow_html=True)
