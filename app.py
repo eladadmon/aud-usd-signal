@@ -143,6 +143,33 @@ try:
 except:
     st.caption("Could not calculate MACD divergence for pre-trigger zone.")
 
+# Trend forecast
+st.subheader("🔮 Trend Forecast")
+try:
+    short_data = data.tail(20).copy()
+    short_data["MACD_hist"] = short_data["MACD"] - short_data["MACD_Signal"]
+    price_slope = np.polyfit(range(len(short_data)), short_data["price"], 1)[0]
+    sma_slope = np.polyfit(range(len(short_data)), short_data["SMA_50"], 1)[0]
+    macd_slope = np.polyfit(range(len(short_data)), short_data["MACD_hist"], 1)[0]
+
+    trend_signals = []
+    if price_slope < 0 and sma_slope < 0:
+        trend_signals.append("📉 AUD price and trend slope down — weakening expected")
+    elif price_slope > 0 and sma_slope > 0:
+        trend_signals.append("📈 AUD is trending up — continuation likely")
+    else:
+        trend_signals.append("🟰 Price trend is uncertain — watch key indicators")
+
+    if macd_slope < 0:
+        trend_signals.append("📉 MACD histogram falling — bearish momentum building")
+    elif macd_slope > 0:
+        trend_signals.append("📈 MACD histogram rising — bullish pressure increasing")
+
+    for t in trend_signals:
+        st.markdown(f"- {t}")
+except:
+    st.warning("⚠️ Unable to calculate trend forecast.")
+
 # Trend summary
 try:
     change = float((data['price'].iloc[-1] - data['price'].iloc[0]) / data['price'].iloc[0] * 100)
