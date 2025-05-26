@@ -83,6 +83,17 @@ st.write(f"50-period SMA: {float(latest['SMA_50']):.4f}")
 
 # Score logic for USD purchase suggestion
 st.subheader("AUD Strength Score (for Buying USD)")
+st.markdown("""
+<details>
+<summary>What do these mean?</summary>
+<ul>
+<li>🟢 <b>Strong</b>: AUD is likely peaking. Good time to convert to USD.</li>
+<li>🟠 <b>Neutral</b>: AUD is firm, but not all signals align. Monitor closely.</li>
+<li>🔴 <b>Weak</b>: AUD likely to weaken further. Hold off if possible.</li>
+</ul>
+</details>
+""", unsafe_allow_html=True)
+
 if score >= 80:
     st.success(f"🟢 AUD is strong — Consider buying USD now (Score: {score}%)")
 elif score >= 60:
@@ -111,5 +122,5 @@ ax.legend()
 st.pyplot(fig)
 
 # Last update footer
-st.caption(f"Live intraday FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}.")
+st.caption(f"Live intraday FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}. This dashboard helps Australians identify favourable USD buying moments.")
 
