@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import feedparser
 
 # Fetch intraday AUD/USD data
-
 def get_fx_data():
     df = yf.download("AUDUSD=X", period="5d", interval="30m")
     df = df[['Close']].rename(columns={"Close": "price"})
@@ -14,7 +13,6 @@ def get_fx_data():
     return df
 
 # Fetch daily AUD/USD data for 200-day SMA
-
 def get_daily_data():
     df = yf.download("AUDUSD=X", period="3mo", interval="1d")
     df = df[['Close']].rename(columns={"Close": "price"})
@@ -22,7 +20,6 @@ def get_daily_data():
     return df
 
 # Calculate indicators
-
 def calculate_indicators(df):
     price = df['price']
     delta = price.diff()
@@ -45,8 +42,7 @@ def calculate_indicators(df):
     df['SMA_50'] = sma_50
     return df
 
-# Scoring logic
-
+# Strength score logic
 def calculate_aud_strength_score(row, prev):
     score = 0
     breakdown = []
@@ -56,29 +52,27 @@ def calculate_aud_strength_score(row, prev):
             "MACD crossover bearish": float(prev['MACD']) > float(prev['MACD_Signal']) and float(row['MACD']) < float(row['MACD_Signal']),
             "Price > 50-SMA (uptrend)": float(row['price']) > float(row['SMA_50'])
         }
-        for name, passed in indicators.items():
+        for label, passed in indicators.items():
             if passed:
-                breakdown.append(f"✅ {name}")
+                breakdown.append(f"✅ {label}")
                 score += 30
             else:
-                breakdown.append(f"❌ {name}")
+                breakdown.append(f"❌ {label}")
         return score, breakdown
     except Exception as e:
         st.warning(f"Scoring error: {e}")
         return 0, [f"⚠️ Scoring error: {e}"]
 
-# Load data
-
+# Load and prepare data
 data = get_fx_data()
 data = calculate_indicators(data)
-
 daily_data = get_daily_data()
+
 latest = data.iloc[-1]
 prev = data.iloc[-2]
 latest_daily = daily_data.iloc[-1]
 
-# Safely compare to SMA_200
-
+# Handle SMA_200
 try:
     sma200_value = float(latest_daily['SMA_200'])
     sma200_display = f"{sma200_value:.4f}" if np.isfinite(sma200_value) else "N/A"
@@ -87,9 +81,10 @@ except:
     sma200_display = "N/A"
     above_200_sma = False
 
+# Score + breakdown
 score, breakdown = calculate_aud_strength_score(latest, prev)
 
-# UI
+# ---- UI Begins ----
 
 st.title("🇦🇺 AUD/USD FX Buy USD Advisor")
 
@@ -103,13 +98,14 @@ st.write(f"MACD Signal: {float(latest['MACD_Signal']):.4f}")
 st.write(f"50-period SMA (30m): {float(latest['SMA_50']):.4f}")
 st.write(f"200-day SMA (1d): {sma200_display}")
 
+# Sentiment Meter
 st.subheader("AUD Sentiment Meter")
 with st.expander("How sentiment is scored"):
     st.markdown("""
-    - **RSI > 70** → AUD is overbought (bullish AUD)
-    - **MACD crossover** → Bearish signal forming
-    - **Price > 50-SMA** → AUD trending up
-    - **Price > 200-SMA** → AUD long-term bullish
+    - **RSI > 70** → AUD is overbought
+    - **MACD crossover bearish**
+    - **Price above 50-SMA**
+    - **Price above 200-SMA**
     """)
 
 sentiment_signals = [
@@ -121,14 +117,15 @@ sentiment_signals = [
 sentiment_strength = int((sum(sentiment_signals) / 4) * 100)
 st.progress(sentiment_strength, text=f"AUD bullish sentiment: {sentiment_strength}%")
 
+# Score Call
 st.subheader("AUD Strength Score (for Buying USD)")
 st.markdown("""
 <details>
 <summary>What do these mean?</summary>
 <ul>
 <li>🟢 <b>Strong</b>: AUD is likely peaking. Good time to convert to USD.</li>
-<li>🟠 <b>Moderate</b>: Some signals are bullish, others aren't. Worth watching.</li>
-<li>🔴 <b>Weak</b>: AUD momentum is unclear. Avoid converting now.</li>
+<li>🟠 <b>Moderate</b>: Some signals are bullish, others aren't.</li>
+<li>🔴 <b>Weak</b>: AUD momentum is unclear.</li>
 </ul>
 </details>
 """, unsafe_allow_html=True)
@@ -144,8 +141,7 @@ st.markdown("**Indicator Breakdown:**")
 for item in breakdown:
     st.markdown(f"- {item}")
 
-# Trend summary
-
+# Trend Summary
 try:
     change = float((data['price'].iloc[-1] - data['price'].iloc[0]) / data['price'].iloc[0] * 100)
     if change > 0:
@@ -156,7 +152,6 @@ except:
     st.markdown("⚠️ Unable to calculate price change trend.")
 
 # Chart
-
 st.subheader("AUD/USD Price Chart")
 fig, ax = plt.subplots(figsize=(10, 5))
 ax.plot(data.index, data['price'], label='AUD/USD')
@@ -166,18 +161,12 @@ ax.set_title("AUD/USD with SMA")
 ax.legend()
 st.pyplot(fig)
 
-# News headlines
-
+# RBA News
 st.subheader("📰 Relevant News Headlines")
 news_feed = feedparser.parse("https://www.rba.gov.au/rss/rss.xml")
 for entry in news_feed.entries[:5]:
-    st.markdown(f"**[{entry.title}]({entry.link})**\n- {entry.published}")
+    st.markdown(f"**[{entry.title}]({entry.link})**  \n- {entry.published}")
 
 # Footer
-
 st.caption(f"Live intraday FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}.")
-    }
-  ]
-}
-
 
