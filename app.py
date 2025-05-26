@@ -84,5 +84,82 @@ except:
 score, breakdown = calculate_aud_strength_score(latest, prev)
 
 # UI
-st
+st.title("🇦🇺 AUD/USD FX Buy USD Advisor")
+
+st.subheader("Latest FX Rate")
+st.metric("AUD/USD", f"{float(latest['price']):.4f}")
+
+st.subheader("Technical Indicators")
+st.write(f"RSI: {float(latest['RSI']):.2f}")
+st.write(f"MACD: {float(latest['MACD']):.4f}")
+st.write(f"MACD Signal: {float(latest['MACD_Signal']):.4f}")
+st.write(f"50-period SMA (30m): {float(latest['SMA_50']):.4f}")
+st.write(f"200-day SMA (1d): {sma200_display}")
+
+# Sentiment meter
+st.subheader("AUD Sentiment Meter")
+with st.expander("How sentiment is scored"):
+    st.markdown("""
+    - **RSI > 70** → AUD is overbought (bullish AUD)
+    - **MACD crossover** → Bearish signal forming
+    - **Price > 50-SMA** → AUD trending up
+    - **Price > 200-SMA** → AUD long-term bullish
+    """)
+
+sentiment_signals = [
+    float(latest['RSI']) > 70,
+    float(prev['MACD']) > float(prev['MACD_Signal']) and float(latest['MACD']) < float(latest['MACD_Signal']),
+    float(latest['price']) > float(latest['SMA_50']),
+    above_200_sma
+]
+sentiment_strength = int((sum(sentiment_signals) / 4) * 100)
+st.progress(sentiment_strength, text=f"AUD bullish sentiment: {sentiment_strength}%")
+
+# Signal score
+st.subheader("AUD Strength Score (for Buying USD)")
+st.markdown("""
+<details>
+<summary>What do these mean?</summary>
+<ul>
+<li>🟢 <b>Strong</b>: AUD is likely peaking. Good time to convert to USD.</li>
+<li>🟠 <b>Moderate</b>: Some signals are bullish, others aren't. Worth watching.</li>
+<li>🔴 <b>Weak</b>: AUD momentum is unclear. Avoid converting now.</li>
+</ul>
+</details>
+""", unsafe_allow_html=True)
+
+if score >= 80:
+    st.success(f"🟢 AUD is strong — Consider buying USD now (Score: {score}%)")
+elif score >= 50:
+    st.warning(f"🟠 Mixed signals — Monitor closely (Score: {score}%)")
+else:
+    st.info(f"🔴 Not a great time to buy USD (Score: {score}%)")
+
+# Indicator breakdown
+st.markdown("**Indicator Breakdown:**")
+for item in breakdown:
+    st.markdown(f"- {item}")
+
+# Trend summary
+try:
+    change = float((data['price'].iloc[-1] - data['price'].iloc[0]) / data['price'].iloc[0] * 100)
+    if change > 0:
+        st.markdown(f"📈 AUD has strengthened by **{change:.2f}%** over the last 5 days.")
+    else:
+        st.markdown(f"📉 AUD has weakened by **{abs(change):.2f}%** over the last 5 days.")
+except:
+    st.markdown("⚠️ Unable to calculate price change trend.")
+
+# Chart
+st.subheader("AUD/USD Price Chart")
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.plot(data.index, data['price'], label='AUD/USD')
+ax.plot(data.index, data['SMA_50'], label='50-period SMA (30m)', linestyle='--')
+ax.set_ylabel("Exchange Rate")
+ax.set_title("AUD/USD with SMA")
+ax.legend()
+st.pyplot(fig)
+
+# Footer
+st.caption(f"Live intraday FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}.")
 
