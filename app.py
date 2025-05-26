@@ -41,7 +41,7 @@ def calculate_indicators(df):
     df['SMA_50'] = sma_50
     return df
 
-# AUD strength score based on indicators
+# Scoring logic
 def calculate_aud_strength_score(row, prev):
     score = 0
     try:
@@ -68,7 +68,7 @@ def calculate_aud_strength_score(row, prev):
         st.warning(f"Scoring error: {e}")
         return 0
 
-# Load data
+# Load and calculate
 data = get_fx_data()
 data = calculate_indicators(data)
 
@@ -116,7 +116,7 @@ sentiment_signals = [
 sentiment_strength = int((sum(sentiment_signals) / 4) * 100)
 st.progress(sentiment_strength, text=f"AUD bullish sentiment: {sentiment_strength}%")
 
-# Buy signal summary
+# Signal score
 st.subheader("AUD Strength Score (for Buying USD)")
 st.markdown("""
 <details>
@@ -148,4 +148,14 @@ except:
 
 # Chart
 st.subheader("AUD/USD Price Chart")
-fig, ax = plt.subplots(figsize=(1
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.plot(data.index, data['price'], label='AUD/USD')
+ax.plot(data.index, data['SMA_50'], label='50-period SMA (30m)', linestyle='--')
+ax.set_ylabel("Exchange Rate")
+ax.set_title("AUD/USD with SMA")
+ax.legend()
+st.pyplot(fig)
+
+# Footer
+st.caption(f"Live intraday FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}.")
+
