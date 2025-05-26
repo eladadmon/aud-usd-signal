@@ -42,7 +42,7 @@ def calculate_indicators(df):
     df['SMA_50'] = sma_50
     return df
 
-# Strength score logic
+# Scoring logic
 def calculate_aud_strength_score(row, prev):
     score = 0
     breakdown = []
@@ -63,11 +63,10 @@ def calculate_aud_strength_score(row, prev):
         st.warning(f"Scoring error: {e}")
         return 0, [f"⚠️ Scoring error: {e}"]
 
-# Load and prepare data
+# Load and calculate
 data = get_fx_data()
 data = calculate_indicators(data)
 daily_data = get_daily_data()
-
 latest = data.iloc[-1]
 prev = data.iloc[-2]
 latest_daily = daily_data.iloc[-1]
@@ -81,11 +80,9 @@ except:
     sma200_display = "N/A"
     above_200_sma = False
 
-# Score + breakdown
 score, breakdown = calculate_aud_strength_score(latest, prev)
 
-# ---- UI Begins ----
-
+# Display
 st.title("🇦🇺 AUD/USD FX Buy USD Advisor")
 
 st.subheader("Latest FX Rate")
@@ -98,7 +95,6 @@ st.write(f"MACD Signal: {float(latest['MACD_Signal']):.4f}")
 st.write(f"50-period SMA (30m): {float(latest['SMA_50']):.4f}")
 st.write(f"200-day SMA (1d): {sma200_display}")
 
-# Sentiment Meter
 st.subheader("AUD Sentiment Meter")
 with st.expander("How sentiment is scored"):
     st.markdown("""
@@ -117,39 +113,44 @@ sentiment_signals = [
 sentiment_strength = int((sum(sentiment_signals) / 4) * 100)
 st.progress(sentiment_strength, text=f"AUD bullish sentiment: {sentiment_strength}%")
 
-# Score Call
-st.subheader("AUD Strength Score (for Buying USD)")
-st.markdown("""
-<details>
-<summary>What do these mean?</summary>
-<ul>
-<li>🟢 <b>Strong</b>: AUD is likely peaking. Good time to convert to USD.</li>
-<li>🟠 <b>Moderate</b>: Some signals are bullish, others aren't.</li>
-<li>🔴 <b>Weak</b>: AUD momentum is unclear.</li>
-</ul>
-</details>
-""", unsafe_allow_html=True)
+# Score and label
+st.subheader("📊 AUD Strength Score (for Buying USD)")
+col1, col2 = st.columns([1, 4])
+col1.markdown("**Score**")
+col2.progress(score, text=f"{score}%")
 
 if score >= 80:
-    st.success(f"🟢 AUD is strong — Consider buying USD now (Score: {score}%)")
+    st.success("🟢 Great time to buy USD (AUD is strong)")
 elif score >= 50:
-    st.warning(f"🟠 Mixed signals — Monitor closely (Score: {score}%)")
+    st.warning("🟠 Moderate zone — Monitor closely")
 else:
-    st.info(f"🔴 Not a great time to buy USD (Score: {score}%)")
+    st.info("🔴 Not ideal — AUD is weak")
 
-st.markdown("**Indicator Breakdown:**")
+st.markdown("**🔍 Indicator Breakdown:**")
 for item in breakdown:
-    st.markdown(f"- {item}")
+    icon = "✅" if "✅" in item else "❌"
+    label = item.replace("✅ ", "").replace("❌ ", "")
+    st.markdown(f"- {icon} **{label}**")
 
-# Trend Summary
+# Trend summary
 try:
     change = float((data['price'].iloc[-1] - data['price'].iloc[0]) / data['price'].iloc[0] * 100)
     if change > 0:
-        st.markdown(f"📈 AUD has strengthened by **{change:.2f}%** over the last 5 days.")
+        st.markdown(f"📈 **AUD has strengthened** by **{change:.2f}%** over the last 5 days.")
     else:
-        st.markdown(f"📉 AUD has weakened by **{abs(change):.2f}%** over the last 5 days.")
+        st.markdown(f"📉 **AUD has weakened** by **{abs(change):.2f}%** over the last 5 days.")
 except:
-    st.markdown("⚠️ Unable to calculate price change trend.")
+    st.markdown("⚠️ Unable to calculate price trend.")
+
+# Action box
+if score < 50 and float(latest['RSI']) < 50 and float(latest['MACD']) < float(latest['MACD_Signal']):
+    st.error("🚫 Action: Do not buy USD now. AUD momentum is weak.")
+elif score >= 80:
+    st.success("💰 Action: Excellent zone to buy USD — take advantage of AUD strength!")
+elif score >= 50:
+    st.warning("🕵️‍♂️ Action: Partial buy zone — watch for MACD flip.")
+else:
+    st.info("🛑 Action: Wait. AUD is not strong enough yet.")
 
 # Chart
 st.subheader("AUD/USD Price Chart")
@@ -161,30 +162,11 @@ ax.set_title("AUD/USD with SMA")
 ax.legend()
 st.pyplot(fig)
 
-# RBA News
+# News headlines
 st.subheader("📰 Relevant News Headlines")
 news_feed = feedparser.parse("https://www.rba.gov.au/rss/rss.xml")
 for entry in news_feed.entries[:5]:
-    st.markdown(f"**[{entry.title}]({entry.link})**  \n- {entry.published}")
+    st.markdown(f"**[{entry.title}]({entry.link})**\n- {entry.published}")
 
 # Footer
 st.caption(f"Live intraday FX data from Yahoo Finance. Last updated: {data.index[-1].strftime('%Y-%m-%d %H:%M UTC')}.")
-
-
-
-# Model interpretation summary
-st.subheader("📊 Model Interpretation Summary")
-st.markdown("""
-- ✅ **RSI > 70** → AUD is potentially peaking  
-- ❌ **MACD crossover not confirmed** → wait for bearish flip  
-- ✅ **Price > 50-SMA** → short-term AUD uptrend  
-- 🔴 **200-day SMA** not available → long-term trend unclear  
-
-### 🧠 Bottom Line:
-You're in a **mixed signal zone**:
-- RSI suggests opportunity to buy USD
-- MACD says hold
-
-📌 **Action**: Consider partial USD conversion now. Watch for MACD confirmation.
-""")
-
