@@ -1,4 +1,3 @@
-
 import streamlit as st
 import yfinance as yf
 import pandas as pd
@@ -24,6 +23,19 @@ st.title("🇦🇺 AUD/USD FX Buy USD Advisor")
 # FX Rate
 st.subheader("Latest FX Rate")
 st.metric(label="AUD/USD", value=f"{latest_price}")
+
+# Simple buy USD analysis logic
+sma = data['SMA_30'].iloc[-1]
+if latest_price < sma and latest_price < 0.6465:
+    buy_message = "🟢 It could be a good time to buy USD. AUD is below trend and near the recent pullback zone."
+elif latest_price < sma:
+    buy_message = "🟡 AUD is slightly below trend. Monitor for further weakness before buying USD."
+else:
+    buy_message = "🔴 Not ideal — AUD is above trend. Best to wait for a better entry point."
+
+# Advisory section
+st.subheader("📌 Should I Buy USD Now?")
+st.markdown(buy_message)
 
 # Chart
 st.subheader("📈 AUD/USD Price Chart")
