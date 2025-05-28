@@ -1,3 +1,4 @@
+
 import streamlit as st
 import yfinance as yf
 import pandas as pd
@@ -113,4 +114,3 @@ Compared to 5 days ago, you're saving **$367 AUD**.
 
 # Timestamp
 st.caption("Live intraday FX data from Yahoo Finance. Last updated: " + str(pd.Timestamp.now(tz='UTC').strftime("%Y-%m-%d %H:%M UTC")))
-
