@@ -1,3 +1,4 @@
+
 import streamlit as st
 import yfinance as yf
 import pandas as pd
@@ -12,7 +13,7 @@ if data.empty:
     st.stop()
 
 # Get latest close price
-latest_price = round(data['Close'].iloc[-1], 5)
+latest_price = round(float(data['Close'].iloc[-1]), 5)
 
 # Calculate 50-period SMA
 data['SMA_30'] = data['Close'].rolling(window=30).mean()
@@ -37,8 +38,8 @@ st.pyplot(fig)
 
 # USD Cost Comparison
 st.subheader("💱 USD Cost Comparison")
-aud_spent = round(50000 * latest_price, 2)
-st.markdown(f"If you buy 50,000 USD now → it will cost ≈ **{aud_spent:,} AUD**.")
+aud_spent = float(round(50000 * latest_price, 2))
+st.markdown(f"If you buy 50,000 USD now → it will cost ≈ **{aud_spent:,.2f} AUD**.")
 
 # Timestamp
 st.caption(f"Data last updated: {pd.Timestamp.now(tz='UTC').strftime('%Y-%m-%d %H:%M UTC')}")
