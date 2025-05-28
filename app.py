@@ -14,7 +14,7 @@ if data.empty:
 # Get latest close price
 latest_price = round(data['Close'].iloc[-1], 5)
 
-# Calculate SMA
+# Calculate 50-period SMA
 data['SMA_30'] = data['Close'].rolling(window=30).mean()
 
 # Header
@@ -30,6 +30,8 @@ fig, ax = plt.subplots()
 ax.plot(data.index, data['Close'], label='AUD/USD', color='blue')
 ax.plot(data.index, data['SMA_30'], label='50-period SMA', linestyle='--', color='orange')
 ax.set_title("AUD/USD with 50-period SMA")
+ax.set_ylabel("Exchange Rate")
+ax.set_xlabel("Date")
 ax.legend()
 st.pyplot(fig)
 
@@ -40,4 +42,3 @@ st.markdown(f"If you buy 50,000 USD now → it will cost ≈ **{aud_spent:,} AUD
 
 # Timestamp
 st.caption(f"Data last updated: {pd.Timestamp.now(tz='UTC').strftime('%Y-%m-%d %H:%M UTC')}")
-
